@@ -1,3 +1,5 @@
+% now sometimes it has some bugs QAQ
+% 2018.8.3 16:33 DK
 % return a variable which suits
 % beginning 0 ~ constraintsId - 1 constraints
 function variables = getVariables(constraintsId, parameter_isEqual, variablesNum, variables_lower, variables_upper, parameter_result)

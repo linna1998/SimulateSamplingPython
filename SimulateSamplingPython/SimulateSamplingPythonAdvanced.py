@@ -206,6 +206,7 @@ def getVariables2(constraintsId, parameter_isEqual,
         prob.solve();        
         # prob.solve(pulp.solvers.PULP_CBC_CMD(fracGap=0.00000001));
         print("before prob.solve")
+
         prob.solve(pulp.solvers.PULP_CBC_CMD(fracGap = 0, options = ['integerTolerance', '1e-8']));
         print(prob);
         variables = prob.variables();        

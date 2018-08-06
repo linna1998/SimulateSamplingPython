@@ -4,7 +4,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>3a70259f-6bdb-4f61-ad75-ff87dafebb47</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>SimulateSamplingPythonAdvanced.py</StartupFile>
+    <StartupFile>SimulateSamplingPython_v4.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -21,6 +21,8 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="SimulateSamplingPython_v4.py" />
+    <Compile Include="SimulateSamplingPython_v3.py" />
     <Compile Include="TestCVXPY.py" />
     <Compile Include="IntegerLinearLeastSquares.py">
       <SubType>Code</SubType>
