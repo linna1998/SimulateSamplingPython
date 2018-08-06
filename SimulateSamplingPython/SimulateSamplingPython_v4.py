@@ -55,12 +55,13 @@ def solve_ilp(objective, constraints):
 # return a variable which suits
 # beginning 0 ~ constraintsId - 1 constraints
 def getVariables(constraintsId, parameter_isEqual, 
-                 variablesNum, variables_lower, variables_upper, parameter_result):    
+                 variablesNum, variables_lower, variables_upper, parameter_result,
+                 block, position_list):    
     variables = []
     if constraintsId == 0:
          for j in range(0, variablesNum):
             variables.append(np.random.randint(variables_lower[j], high = variables_upper[j]))
-         return variables
+         return variables, block, position_list
     else:
         # Randomly get a variable
         # which suits for 0 ~ constraintsId - 1 constraints
@@ -69,19 +70,44 @@ def getVariables(constraintsId, parameter_isEqual,
         # Variables
         pulp_variables = [];
         for i in range(1, variablesNum + 1):
+            ## the first possible solution
             #temp_lowBound = np.random.randint(variables_lower[i - 1], high = variables_upper[i - 1]);
-            #temp_upBound = np.random.randint(variables_lower[i - 1], high = variables_upper[i - 1]);
-            temp_lowBound = round(variables_lower[i-1] * np.random.rand());
-            temp_upBound = round(variables_upper[i-1] * np.random.rand());
-            if (temp_lowBound >= temp_upBound):
-                temp = temp_lowBound;
-                temp_lowBound = temp_upBound;
-                temp_upBound = temp;                
+            #temp_upBound = np.random.randint(variables_lower[i - 1], high = variables_upper[i - 1]);                     
+            #if (temp_lowBound >= temp_upBound):
+            #    temp = temp_lowBound;
+            #    temp_lowBound = temp_upBound;
+            #    temp_upBound = temp;                
+            ## the second possible solution
+            #temp_lowBound = round(variables_lower[i-1] * np.random.rand());
+            #temp_upBound = round(variables_upper[i-1] * np.random.rand()); 
+            
+            # the third possible solution
+            # using block & position_list to divide the space into several parts
+            partialLength = (variables_upper[i-1] - variables_lower[i-1]) / block;
+            temp_lowBound = round(variables_lower[i-1] + partialLength * position_list[i-1]);
+            temp_upBound = round(temp_lowBound + partialLength);            
+
             pulp_variables.append(pulp.LpVariable('X%d' % i, cat = pulp.LpInteger, 
                                                   lowBound = temp_lowBound, upBound = temp_upBound));
+            
+            
         
         pulp_variables.append(pulp.LpVariable('t', cat = pulp.LpInteger))
         # print("pulp_variables", pulp_variables)
+
+        # calculate the carry
+        position_list[variablesNum-1] += 1;
+        final_input = 0;
+        for i in range(variablesNum-1, -1, -1):
+            if (position_list[i] >= block):
+                position_list[i] -= block;
+                if (i > 0):
+                    position_list[i-1] += 1;
+                else:
+                    final_input = 1;
+        if (final_input == 1):
+            position_list = [0] * variablesNum;
+            block = block * 2;
 
         # Objective function
         F = [0] * variablesNum
@@ -136,10 +162,10 @@ def getVariables(constraintsId, parameter_isEqual,
         print("variables", variables)
         if (variables == None):
             print("No possible solution! QAQ")
-            return variables
+            return variables, block, position_list
         # delete the last "t" variable
         variables.pop()
-        return variables          
+        return variables, block, position_list          
     
 def matlabSolver(A, B):
     eng = matlab.engine.start_matlab()
@@ -164,10 +190,18 @@ def solveConstraint(constraintsId, parameter_isEqual, constraintsNum,
         if (parameter_isEqual[i]):
             equalNum += 1;
 
+    # used in select a possible variables
+    block = 2;
+    position_list = [0] * variablesNum;
+
     while (len(A) < variablesNum + 1):        
-        variables = getVariables(constraintsId, parameter_isEqual, 
-                variablesNum, variables_lower, variables_upper, parameter_result);   
+        variables, block, position_list = getVariables(constraintsId, parameter_isEqual, 
+                variablesNum, variables_lower, variables_upper, parameter_result,
+                block, position_list);   
         sampling_count += 1;
+        if variables == None:
+            print("No possible solution in these constraints QAQ");
+            continue;        
 
         returnValueList = simulateFunction(variables);
 
