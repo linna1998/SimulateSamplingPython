@@ -4,15 +4,31 @@ import pulp
 from scipy.linalg import solve
 import sys
 import matlab.engine
-
-parameter_a = [[]]
-parameter_b = []
+import cvxpy
 
 class Value:
+    """The possible returning type of a constraint
+
+    Attributes:
+        intValue: An integer value of the statement.
+        isValid: A boolean indicating if the value meets the determine
+            statement or not.
+    """
     intValue = 0
     isValid = False
 
 def getValue(constraintsId, variables):
+    """Simulate a statement in the real program
+    
+    Args:
+        constraintsId: the # of 'if' statement going to simulate
+        variables: the chosen variables value
+
+    Returns:
+        returnValue: is in Value type
+            it contains a value of the statement, 
+            and the judgement that the determine statement is True / False
+    """
     returnValue = Value()
     for i in range(0, variablesNum):
         returnValue.intValue += parameter_a[constraintsId][i] * variables[i]
@@ -25,16 +41,55 @@ def getValue(constraintsId, variables):
         returnValue.isValid = False
     return returnValue
 
+def getValueNonlinear(constraintsId, variables):
+    # constraints is written in the program
+    returnValue = Value()
+    if (constraintsId == 0):
+        returnValue.intValue = variables[1] + variables[2] + 4;
+    elif (constraintsId == 1):        
+        returnValue.intValue = variables[0] - variables[1] + 2;
+    elif (constraintsId == 2):        
+        returnValue.intValue = variables[0] * variables[1] + variables[2];
+    if ((not parameter_isEqual[constraintsId]) and returnValue.intValue <= 0):
+        returnValue.isValid = True
+    elif (parameter_isEqual[constraintsId] and returnValue.intValue == 0):
+        returnValue.isValid = True
+    else:
+        returnValue.isValid = False
+    return returnValue
+
 def simulateFunction(variables):
+    """Simulate the whole nested statements in the real program.
+    
+    Args:
+        variables: the chosen variables value
+
+    Returns:
+        returnValueList: a list of the value of the statements 
+            execution stopped when the result of final 'if' statement is False
+    """
     returnValueList = []
     for i in range(0, constraintsNum):
         returnValue = getValue(i, variables)
+        # returnValue = getValueNonlinear(i, variables);
         returnValueList.append(returnValue)
         if (returnValue.isValid == False):
            break
     return returnValueList
 
 def solve_ilp(objective, constraints):
+    """Solve the integer programming problem.
+    
+    Args:
+        objective: the function you are going to minimize
+        constraints: the possible constraints you are going to follow
+            while optimizing the objective
+
+    Returns:
+        None: if there is no possible solution for the optimization problem
+        otherwise, returns the variables suitable for the optimization problem
+   
+    """
     print("objective", objective)
     print("constraaints", constraints)
     prob = pulp.LpProblem('LP1', pulp.LpMinimize)
@@ -42,7 +97,11 @@ def solve_ilp(objective, constraints):
     for cons in constraints:
         prob += cons
     print("prob", prob)    
-    status = prob.solve(pulp.GLPK(options=['--mipgap', '0.000001', '--cgr']))
+    # The MIP solver will terminate (with an optimal result) 
+    # when the gap between the lower and upper objective bound 
+    # is less than MIPGap times the absolute value of the upper bound.
+    # status = prob.solve(pulp.GLPK(options=['--mipgap', '0', '--cgr']))
+    status = prob.solve(pulp.GLPK(options=['--exact']))
     # status = prob.solve(pulp.COIN_CMD(fracGap = 0));
     # status = prob.solve(pulp.PULP_CBC_CMD()); # default
     if status != 1:
@@ -58,6 +117,7 @@ def solve_ilp(objective, constraints):
 def getVariables(constraintsId, parameter_isEqual, 
                  variablesNum, variables_lower, variables_upper, parameter_result,
                  block, position_list):    
+
     variables = []
     if constraintsId == 0:
          for j in range(0, variablesNum):
@@ -74,8 +134,8 @@ def getVariables(constraintsId, parameter_isEqual,
             # using block & position_list to divide the space into several
             # parts
             partialLength = (variables_upper[i - 1] - variables_lower[i - 1]) / block
-            temp_lowBound = max(round(variables_lower[i - 1] + partialLength * position_list[i - 1]), variables_lower[i - 1])
-            temp_upBound = min(round(temp_lowBound + partialLength), variables_upper[i - 1])            
+            temp_lowBound = max(round(variables_lower[i - 1] + partialLength * position_list[i - 1]), variables_lower[i - 1]);
+            temp_upBound = min(round(temp_lowBound + partialLength), variables_upper[i - 1]);            
 
             pulp_variables.append(pulp.LpVariable('X%d' % i, cat = pulp.LpInteger, 
                                                   lowBound = temp_lowBound, upBound = temp_upBound))
@@ -87,6 +147,7 @@ def getVariables(constraintsId, parameter_isEqual,
         F = [0] * variablesNum
         F.append(1)
         objective = sum([F[i] * pulp_variables[i] for i in range(0, V_NUM)]) 
+        # objective += sum([F[i] * pulp_variables[i] for i in range(0, V_NUM)]);
         # print(objective)
 
         # Build Constraints
@@ -120,11 +181,15 @@ def getVariables(constraintsId, parameter_isEqual,
         # delete the last "t" variable
         variables.pop()
         return variables         
-    
+
 def matlabSolver(A, B):
     eng = matlab.engine.start_matlab()
     B = list(map(list, zip(*[B])))  # transpose B to size (n, 1)
     C = eng.getLinear(matlab.double(A),matlab.double(B))
+    # no possible solution for the linear equation A x = B
+    if (C == matlab.double([])):
+        print("No possible solution for the linear equation! QAQ");
+        return None;
     C = list(map(list, zip(*C)))[0]
     print("C = ", C)
     for i in range(0, len(C)):
@@ -143,13 +208,13 @@ def solveConstraint(constraintsId, parameter_isEqual, constraintsNum,
     for i in range(0, constraintsId):
         if (parameter_isEqual[i]):
             equalNum += 1;
-
-    # used in select a possible variables
+    
     block = 1
     position_list = [0] * variablesNum
     isLinear = 0;
 
-    while (len(A) < variablesNum + 1):        
+    while (len(A) < variablesNum + 1):   
+        # select a possible variables
         variables = getVariables(constraintsId, parameter_isEqual, 
                 variablesNum, variables_lower, variables_upper, parameter_result,
                 block, position_list);
@@ -176,8 +241,7 @@ def solveConstraint(constraintsId, parameter_isEqual, constraintsNum,
         if (final_input == 1):            
             position_list = [0] * variablesNum
             block = block * 2;
-            
-      
+                 
         if variables == None:
             print("No possible solution in these constraints QAQ")
             continue        
@@ -208,7 +272,11 @@ def solveConstraint(constraintsId, parameter_isEqual, constraintsNum,
 
     print("A = ", A)
     print("B = ", B)
-    C = matlabSolver(A, B) 
+    C = matlabSolver(A, B)     
+    if (C == None):
+        print("No possible solution for the linear equations! TAT");
+        print("Cannot solve constarint id", constraintsId);
+        return parameter_result, sampling_count, None;
 
     if constraintsId == 0:
         parameter_result.append(C)        
@@ -217,13 +285,16 @@ def solveConstraint(constraintsId, parameter_isEqual, constraintsNum,
     return parameter_result, sampling_count, variables
 
 # set parameters
-MAX = 2147483647
-MIN = -2147483648
+
 MAX = 1000
 MIN = -1000
 
-parameter_a = [[1, -1, 0], [1, 0, 0], [0, 1, 1]]
-parameter_b = [2, 3, 4]
+MAX = (1<<31)-1
+MIN = -(1<<31)
+print(MAX, MIN)
+
+parameter_a = [[0, 1, 1], [1, 0, 0], [1, -1, 0]]
+parameter_b = [4, 3, 2]
 parameter_isEqual = [True, False, True]
 constraintsNum = 3
 

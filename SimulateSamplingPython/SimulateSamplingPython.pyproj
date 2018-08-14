@@ -21,6 +21,9 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="IPBug.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="SimulateSamplingPython_v4.py" />
     <Compile Include="SimulateSamplingPython_v3.py" />
     <Compile Include="TestCVXPY.py" />

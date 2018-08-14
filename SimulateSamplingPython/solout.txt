@@ -1,0 +1,45 @@
+Problem:    
+Rows:       9
+Columns:    4
+Non-zeros:  13
+Status:     OPTIMAL
+Objective:  OBJ = 0 (MINimum)
+
+   No.   Row name   St   Activity     Lower bound   Upper bound    Marginal
+------ ------------ -- ------------- ------------- ------------- -------------
+     1 _C1          B              0                           0 
+     2 _C2          NU            -4                          -4          -0.5 
+     3 _C3          NL            -4            -4                         0.5 
+     4 _C4          B    2.14748e+09  -2.14748e+09               
+     5 _C5          B    2.14748e+09                 2.14748e+09 
+     6 _C6          NL  -2.14748e+09  -2.14748e+09                       < eps
+     7 _C7          B   -2.14748e+09                 2.14748e+09 
+     8 _C8          B    2.14748e+09  -2.14748e+09               
+     9 _C9          B    2.14748e+09                 2.14748e+09 
+
+   No. Column name  St   Activity     Lower bound   Upper bound    Marginal
+------ ------------ -- ------------- ------------- ------------- -------------
+     1 t            B              0                             
+     2 X2           B   -2.14748e+09  -2.14748e+09   2.14748e+09 
+     3 X3           B    2.14748e+09  -2.14748e+09   2.14748e+09 
+     4 X1           NU   2.14748e+09  -2.14748e+09   2.14748e+09         < eps
+
+Karush-Kuhn-Tucker optimality conditions:
+
+KKT.PE: max.abs.err = 0.00e+00 on row 0
+        max.rel.err = 0.00e+00 on row 0
+        High quality
+
+KKT.PB: max.abs.err = 0.00e+00 on row 0
+        max.rel.err = 0.00e+00 on row 0
+        High quality
+
+KKT.DE: max.abs.err = 0.00e+00 on column 0
+        max.rel.err = 0.00e+00 on column 0
+        High quality
+
+KKT.DB: max.abs.err = 0.00e+00 on row 0
+        max.rel.err = 0.00e+00 on row 0
+        High quality
+
+End of output
